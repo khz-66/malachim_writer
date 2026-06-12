@@ -1,13 +1,464 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="css/index.css">
-  <script src="js/index.js"></script>
-  <title>malachim_ŵriter</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Schreibprogramm mit Positionskorrektur</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f6f9;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: #333;
+        }
+
+        h1 {
+            margin-bottom: 10px;
+            font-size: 20px;
+            color: #2c3e50;
+            text-align: center;
+        }
+
+        .settings-panel {
+            background: white;
+            padding: 10px 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            margin-bottom: 15px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .setting-group {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+        }
+
+        .setting-group label {
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            color: #7f8c8d;
+        }
+
+        .setting-group input {
+            padding: 6px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 70px;
+            font-size: 13px;
+        }
+
+        .editor-container {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        /* Schreibfläche */
+        #schreibflaeche {
+            background: white;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+            border-radius: 4px;
+            padding: 15px;
+            box-sizing: border-box;
+            outline: none;
+            overflow-y: auto;
+            font-size: 0; 
+            min-width: 300px;
+            min-height: 200px;
+            border: 2px dashed #bdc3c7;
+        }
+
+        /* Proportionale Breiten- und Höhensteuerung für die Grafiken */
+        #schreibflaeche img {
+            display: inline-block;
+            vertical-align: top;
+            pointer-events: none;
+            object-fit: cover; 
+            object-position: left center;
+            margin-right: var(--char-spacing, 2px); 
+            margin-bottom: var(--line-spacing, 5px);
+            position: relative; 
+        }
+
+        .zeile {
+            display: block;
+            width: 100%;
+            height: 0;
+        }
+
+        #mobile-input {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            border: none;
+            outline: none;
+            background: transparent;
+            font-size: 16px;
+            z-index: 10;
+            cursor: text;
+        }
+
+        .controls-panel {
+            margin-top: 5px;
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-control {
+            padding: 10px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            font-size: 13px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            z-index: 20;
+        }
+
+        .btn-jpg { background-color: #2ecc71; color: white; }
+        .btn-html { background-color: #e67e22; color: white; }
+        .btn-clear { background-color: #e74c3c; color: white; }
+
+        .instructions {
+            margin-top: 20px;
+            max-width: 100%;
+            background: #fff;
+            padding: 15px 20px;
+            border-radius: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.02);
+        }
+    </style>
 </head>
 <body>
-	<h1>malachim_ŵriter</h1>
+
+    <h1>Zeichen-Schreibprogramm</h1>
+
+    <div class="settings-panel">
+        <div class="setting-group">
+            <label for="inp-width">Breite (px)</label>
+            <input type="number" id="inp-width" value="360">
+        </div>
+        <div class="setting-group">
+            <label for="inp-height">Höhe (px)</label>
+            <input type="number" id="inp-height" value="400">
+        </div>
+        <div class="setting-group">
+            <label for="inp-size">Zeichen (px)</label>
+            <input type="number" id="inp-size" value="40">
+        </div>
+    </div>
+
+    <div class="editor-container">
+        <div id="schreibflaeche">Tippe hier, um zu schreiben...</div>
+        <input type="text" id="mobile-input" autocomplete="off" autocapitalize="none">
+    </div>
+
+    <div class="controls-panel">
+        <button class="btn-control btn-jpg" onclick="exportAsJPG()">Als JPG speichern</button>
+        <button class="btn-control btn-html" onclick="exportAsHTML()">HTML Export</button>
+        <button class="btn-control btn-clear" onclick="clearAll()">Löschen</button>
+    </div>
+
+    <div class="instructions">
+        <strong>Tuning & Fixes aktiv:</strong> Löschen mit Backspace funktioniert jetzt auch zuverlässig auf Android-Tastaturen. Kombi-Zeichen werden mit einem Klick komplett gelöscht.
+    </div>
+
+    <script>
+        const imageMapping = {
+            'a': 'mal_alef_a.jpg', 'b': 'mal_beth_b.jpg', 'g': 'mal_gimel_g.jpg', 'd': 'mal_dalet_d.jpg',
+            'e': 'mal_he_e.jpg', 'u': 'mal_vav_f_u_v_w.jpg', 'v': 'mal_vav_f_u_v_w.jpg', 'w': 'mal_vav_f_u_v_w.jpg',
+            'z': 'mal_zayin_z.jpg', 'ch': 'mal_chet_ch.jpg', 't': 'mal_tet_t.jpg', 'i': 'mal_yod_i_j_y.jpg',
+            'j': 'mal_yod_i_j_y.jpg', 'y': 'mal_yod_i_j_y.jpg', 'k': 'mal_kaf_k.jpg', 'l': 'mal_lamed_l.jpg',
+            'm': 'mal_mem_m.jpg', 'n': 'mal_nun_n.jpg', 's': 'mal_samech_s_1.jpg', 's2': 'mal_samech_s_2.jpg',
+            'o': 'mal_ayin_o.jpg', 'p': 'mal_peh_f_p.jpg', 'f': 'mal_peh_f_p.jpg', 'ts2': 'mal_tsadeh_ts_z.jpg',
+            'q': 'mal_qof_q.jpg', 'r': 'mal_resh_r.jpg', 'sh': 'mal_shin_sh_s.jpg', 't': 'mal_tav_t.jpg',
+            ' ': 'mal_space.jpg', '.': 'mal_dot.jpg', '_': 'mal_space.jpg',
+            '_a': 'alef.jpg', '_b': 'bet.jpg', '_g': 'gimel.jpg', '_d': 'dalet.jpg', '_e': 'he.jpg',
+            '_v': 'vav.jpg', '_z': 'zayin.jpg', '_ch': 'chet.jpg', '_th': 'tet.jpg', '_y': 'yod.jpg',
+            '_k': 'kaf.jpg', '_l': 'lamed.jpg', '_m': 'mem.jpg', '_n': 'nun.jpg', '_s': 'samech.jpg',
+            '_o': 'ayin.jpg', '_p': 'peh.jpg', '_ts': 'tsadeh.jpg', '_q': 'qof.jpg', '_r': 'resh.jpg',
+            '_sh': 'shin.jpg', '_t': 'tav.jpg'
+        };
+
+        const imageWidthFactors = {
+            '.': 0.30, ' ': 0.50, '_': 0.50,
+            'a': 1.00, 'b': 1.00, 'g': 1.00, 'd': 1.00, 'e': 1.00, 
+            'u': 0.95, 'v': 0.95, 'w': 0.95, 'z': 0.95, 't': 0.95, 
+            'k': 1.00, 'l': 0.90, 'm': 1.05, 'n': 0.95, 'o': 1.00, 
+            'p': 1.00, 'f': 0.90, 'q': 1.00, 'r': 0.95,
+            'i': 0.55, 'j': 0.55, 'y': 0.55, 's': 0.90,
+            'ch': 1.15, 'sh': 1.20, 's2': 1.00, 'ts2': 1.25,
+            '_a': 0.90, '_b': 0.90, '_g': 0.90, '_d': 0.90, '_e': 0.90,
+            '_v': 0.85, '_z': 0.85, '_ch': 1.10, '_th': 0.90, '_y': 0.50,
+            '_k': 0.90, '_l': 0.85, '_m': 1.00, '_n': 0.85, '_s': 0.90,
+            '_o': 0.90, '_p': 0.90, '_ts': 1.10, '_q': 0.95, '_r': 0.90,
+            '_sh': 1.15, '_t': 0.90
+        };
+
+        const imageYShifts = {
+            'y': 0.15, 'n': 0.15,  
+            'a': 0.00, 'b': 0.00, 'g': 0.00, 'd': 0.00, 'e': 0.00,
+            'u': 0.02, 'v': 0.02, 'w': 0.02, 'z': 0.00, 't': 0.00,
+            'k': 0.00, 'l': 0.00, 'm': 0.00, 'o': 0.00, 'p': 0.00, 
+            'f': 0.00, 'q': 0.05, 'r': 0.00,
+            'i': 0.08, 'j': 0.08, '.': 0.25, ' ': 0.00,
+            'ch': 0.00, 'sh': 0.00, 's2': 0.00, 'ts2': 0.02,
+            '_a': 0.05, '_b': 0.05, '_g': 0.05, '_d': 0.05, '_e': 0.05,
+            '_v': 0.05, '_z': 0.05, '_ch': 0.05, '_th': 0.05, '_y': 0.10,
+            '_k': 0.05, '_l': 0.05, '_m': 0.05, '_n': 0.08, '_s': 0.05,
+            '_o': 0.05, '_p': 0.05, '_ts': 0.05, '_q': 0.08, '_r': 0.05,
+            '_sh': 0.05, '_t': 0.05
+        };
+
+        const area = document.getElementById('schreibflaeche');
+        const mobileInput = document.getElementById('mobile-input');
+        const inpWidth = document.getElementById('inp-width');
+        const inpHeight = document.getElementById('inp-height');
+        const inpSize = document.getElementById('inp-size');
+
+        let rawText = "";
+        let isFirstKey = true;
+
+        function updateStyles() {
+            const w = inpWidth.value + 'px';
+            const h = inpHeight.value + 'px';
+            const size = parseFloat(inpSize.value);
+
+            area.style.width = w;
+            area.style.height = h;
+            mobileInput.style.width = w;
+            mobileInput.style.height = h;
+
+            const spacingRight = (size * 0.06) + 'px';
+            const spacingBottom = (size * 0.15) + 'px';
+
+            area.style.setProperty('--char-spacing', spacingRight);
+            area.style.setProperty('--line-spacing', spacingBottom);
+
+            const imgs = area.querySelectorAll('img');
+            imgs.forEach(img => {
+                const token = img.getAttribute('alt');
+                const wFactor = imageWidthFactors[token] || 1.0;
+                const yShift = imageYShifts[token] || 0.0;
+                
+                img.style.width = (size * wFactor) + 'px';
+                img.style.height = size + 'px';
+                img.style.top = (size * yShift) + 'px'; 
+            });
+        }
+
+        inpWidth.addEventListener('input', updateStyles);
+        inpHeight.addEventListener('input', updateStyles);
+        inpSize.addEventListener('input', updateStyles);
+        updateStyles();
+
+        mobileInput.addEventListener('focus', function() {
+            if (isFirstKey) {
+                area.innerHTML = "";
+                isFirstKey = false;
+            }
+            area.style.borderColor = "#3498db";
+        });
+
+        mobileInput.addEventListener('blur', function() {
+            area.style.borderColor = "#bdc3c7";
+        });
+
+        mobileInput.addEventListener('input', function(e) {
+            let val = mobileInput.value;
+            mobileInput.value = "";
+
+            if (!val && e.inputType === "deleteContentBackward") {
+                handleBackspace();
+            } else if (val) {
+                handleNewChar(val);
+            }
+            renderText();
+        });
+
+        // DAS FIXT ANDROID BACKSPACE: Abfangen auf Tastaturebene
+        mobileInput.addEventListener('keydown', function(e) {
+            if (e.key === 'Backspace') {
+                handleBackspace();
+                renderText();
+            } else if (e.key === 'Enter') {
+                rawText += 'ENTER';
+                renderText();
+            }
+        });
+
+        function handleBackspace() {
+            if (rawText.length > 0) {
+                // Löscht mehrstellige Kürzel mit nur einem Tastendruck komplett
+                if (rawText.endsWith('ts2')) {
+                    rawText = rawText.slice(0, -3);
+                } else if (rawText.endsWith('ch') || rawText.endsWith('sh') || rawText.endsWith('s2')) {
+                    rawText = rawText.slice(0, -2);
+                } else if (rawText.endsWith('ENTER')) {
+                    rawText = rawText.slice(0, -5);
+                } else if (rawText.length >= 2 && rawText.charAt(rawText.length - 2) === '_') {
+                    // Löscht Varianten mit Unterstrich (z.B. '_a') komplett auf einmal
+                    rawText = rawText.slice(0, -2);
+                } else {
+                    rawText = rawText.slice(0, -1);
+                }
+            }
+        }
+
+        function handleNewChar(charStr) {
+            let char = charStr.toLowerCase();
+            
+            if (char === ' ') {
+                rawText += ' ';
+            } else if (char === '.') {
+                rawText += '.';
+            } else if (char === '_') {
+                rawText += '_';
+            } else {
+                if (rawText.endsWith('c') && char === 'h') { rawText = rawText.slice(0, -1) + 'ch'; }
+                else if (rawText.endsWith('s') && char === 'h') { rawText = rawText.slice(0, -1) + 'sh'; }
+                else if (rawText.endsWith('s') && char === '2') { rawText = rawText.slice(0, -1) + 's2'; }
+                else if (rawText.endsWith('t') && char === 's') { rawText = rawText.slice(0, -1) + 'ts'; }
+                else if (rawText.endsWith('ts') && char === '2') { rawText = rawText.slice(0, -2) + 'ts2'; }
+                else if (rawText.endsWith('_') && imageMapping['_' + char]) { rawText = rawText.slice(0, -1) + '_' + char; }
+                else if (imageMapping[char] || char === 'c') { rawText += char; }
+            }
+        }
+
+        function renderText() {
+            let html = "";
+            let size = parseFloat(inpSize.value);
+            let tempText = rawText;
+            let tokens = [];
+            
+            while (tempText.length > 0) {
+                if (tempText.startsWith('ENTER')) { tokens.push('ENTER'); tempText = tempText.slice(5); }
+                else if (tempText.startsWith('ts2')) { tokens.push('ts2'); tempText = tempText.slice(3); }
+                else if (tempText.startsWith('ch')) { tokens.push('ch'); tempText = tempText.slice(2); }
+                else if (tempText.startsWith('sh')) { tokens.push('sh'); tempText = tempText.slice(2); }
+                else if (tempText.startsWith('s2')) { tokens.push('s2'); tempText = tempText.slice(2); }
+                else if (tempText.startsWith('_') && tempText.length > 1) { tokens.push(tempText.slice(0, 2)); tempText = tempText.slice(2); }
+                else if (tempText.startsWith('c')) { tokens.push('c'); tempText = tempText.slice(1); }
+                else { tokens.push(tempText[0]); tempText = tempText.slice(1); }
+            }
+
+            tokens.forEach(token => {
+                if (token === 'ENTER') {
+                    html += '<div class="zeile"></div>';
+                } else if (imageMapping[token]) {
+                    const wFactor = imageWidthFactors[token] || 1.0;
+                    const yShift = imageYShifts[token] || 0.0;
+                    
+                    const calculatedWidth = size * wFactor;
+                    const calculatedTop = size * yShift;
+                    
+                    html += `<img src="${imageMapping[token]}" style="width:${calculatedWidth}px; height:${size}px; top:${calculatedTop}px;" alt="${token}">`;
+                }
+            });
+
+            area.innerHTML = html || (isFirstKey ? "Tippe hier, um zu schreiben..." : "");
+        }
+
+        function clearAll() {
+            rawText = "";
+            isFirstKey = true;
+            renderText();
+            mobileInput.focus();
+        }
+
+        function exportAsJPG() {
+            if (isFirstKey || rawText === "") {
+                alert("Bitte schreibe zuerst etwas!");
+                return;
+            }
+
+            let originalBorder = area.style.border;
+            area.style.border = "none";
+
+            html2canvas(area, {
+                useCORS: false,
+                logging: false,
+                backgroundColor: "#ffffff"
+            }).then(canvas => {
+                area.style.border = originalBorder;
+                let link = document.createElement('a');
+                link.download = 'mein_zeichentext.jpg';
+                link.href = canvas.toDataURL("image/jpeg", 0.9);
+                link.click();
+            }).catch(err => {
+                alert("Fehler beim Exportieren: " + err);
+                area.style.border = originalBorder;
+            });
+        }
+
+        function exportAsHTML() {
+            let size = inpSize.value;
+            let currentContent = area.innerHTML;
+            if (isFirstKey) currentContent = "";
+            
+            let sizeNum = parseFloat(size);
+            let spacingRight = (sizeNum * 0.06) + 'px';
+            let spacingBottom = (sizeNum * 0.15) + 'px';
+            
+            let htmlContent = `<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>Exportierter Text</title>
+    <style>
+        body { background-color: #f4f6f9; padding: 20px; display: flex; justify-content: center; }
+        .schreibflaeche { 
+            width: ${inpWidth.value}px; 
+            min-height: ${inpHeight.value}px; 
+            background: white; 
+            padding: 10px; 
+            box-sizing: border-box;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+            font-size: 0; 
+        }
+        .schreibflaeche img { 
+            display: inline-block; 
+            object-fit: cover;
+            object-position: left center;
+            margin-right: ${spacingRight};
+            margin-bottom: ${spacingBottom};
+            vertical-align: top;
+            position: relative;
+        }
+        .zeile { display: block; width: 100%; height: 0; }
+    </style>
+</head>
+<body>
+    <div class="schreibflaeche">
+        ${currentContent}
+    </div>
+</body>
+</html>`;
+            
+            let blob = new Blob([htmlContent], {type: "text/html;charset=utf-8"});
+            let url = URL.createObjectURL(blob);
+            let a = document.createElement('a');
+            a.href = url;
+            a.download = 'exportierter_text.html';
+            a.click();
+        }
+    </script>
 </body>
 </html>
