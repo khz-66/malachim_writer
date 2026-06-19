@@ -141,6 +141,7 @@
             box-sizing: border-box;
             outline: none;
             overflow-y: auto;
+            overflow-x: hidden;
             font-size: 0; 
             min-width: 300px;
             min-height: 200px;
@@ -151,22 +152,24 @@
         .text-zeile {
             display: block;
             width: 100%;
-            min-height: var(--line-height-fallback, 40px);
+            height: var(--line-height-fallback, 40px);
             font-size: 0;
             margin-bottom: var(--line-spacing, 5px);
+            position: relative;
+            overflow: visible;
         }
         .text-zeile.align-left { text-align: left; }
         .text-zeile.align-center { text-align: center; }
         .text-zeile.align-right { text-align: right; }
 
         #schreibflaeche img {
-    display: inline-block;
-    vertical-align: top;
-    pointer-events: none;
-    object-fit: contain; /* Verhindert das Abschneiden und skaliert das Bild sauber */
-    position: relative; 
-}
-
+            display: inline-block;
+            vertical-align: top;
+            pointer-events: none;
+            object-fit: contain;
+            position: relative; 
+            z-index: 2;
+        }
 
         .cursor-marker {
             display: inline-block;
@@ -174,6 +177,8 @@
             background-color: #e67e22;
             vertical-align: top;
             animation: blink 1s infinite;
+            position: relative;
+            z-index: 3;
         }
 
         @keyframes blink {
@@ -263,11 +268,11 @@
         <button class="btn-control btn-clear" onclick="clearAll()">Löschen</button>
     </div>
 
-    <script>
+           <script>
         const charConfig = {
             'a':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
             'b':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
-            'c':  { w: 0.85, h: 1.00, y: -0.05, space: 1.0 }, // Kopiert von 'k'
+            'c':  { w: 0.85, h: 1.00, y: -0.05, space: 1.0 },
             'd':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
             'e':  { w: 1.00, h: 1.00, y: -0.04, space: 0.8 },
             'f':  { w: 0.90, h: 1.00, y: -0.04, space: 1.0 },
@@ -286,22 +291,22 @@
             's':  { w: 1.30, h: 1.00, y: -0.05, space: 1.0 },
             's2': { w: 1.00, h: 1.00, y: -0.03, space: 1.0 },
             't':  { w: 1.10, h: 1.00, y: -0.03, space: 1.0 },
-            't2': { w: 1.10, h: 1.00, y: -0.05, space: 1.0 }, // Kopiert von 't'
+            't2': { w: 1.10, h: 1.00, y: -0.05, space: 1.0 },
             'u':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
             'v':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
             'w':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
-            'x':{ w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
+            'x':  { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
             'y':  { w: 0.65, h: 1.00, y: -0.04, space: 1.0 },
             'z':  { w: 0.95, h: 1.00, y: -0.04, space: 1.0 },
             
             'ch': { w: 1.15, h: 1.00, y: 0.00, space: 1.0 },
             'sh': { w: 1.20, h: 1.00, y: 0.00, space: 1.0 },
-            'ts':{ w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
+            'ts': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
+            'ts2': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
             
             '.':  { w: 0.50, h: 1.00, y: -0.00, space: 0.5 },
             ' ':  { w: 0.50, h: 1.00, y: 0.00, space: 1.0 },
             
-            // Modus-Special Zeichen um 10% verkleinert (von h: 0.90 auf h: 0.81)
             '_a': { w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_b': { w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_g': { w: 0.40, h: 1.70, y: -0.45, space: 1.0 },
@@ -311,7 +316,7 @@
             
             '_z': { w: 0.85, h: 1.60, y: -0.40, space: 1.0 },
             '_ch':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
-            '_th': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
+            '_th':{ w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             '_y': { w: 0.40, h: 1.60, y: -0.40, space: 0.10},
             '_k': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             
@@ -320,11 +325,17 @@
             '_m': { w: 1.00, h: 1.60, y: -0.40, space: 1.0 },
             '_n': { w: 0.85, h: 1.60, y: 0.08, space: 1.0 },
             '_s': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
+            '_s2': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             '_o': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             '_p': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             '_ts':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
             
             '_q': { w: 0.40, h: 1.65, y: -0.45, space: 1.0 },
+            
+            '_k2':{ w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
+            '_m2':{ w: 1.00, h: 1.60, y: -0.40, space: 1.0 },
+            '_n2':{ w: 0.85, h: 1.60, y: 0.08, space: 1.0 },
+            '_ts2':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
             
             '_r': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
             '_sh':{ w: 1.15, h: 1.60, y: -0.40, space: 1.0 },
@@ -332,13 +343,14 @@
         };
 
         const imageMapping = {
+            
             'a': 'mal_alef_a.jpg', 
             'b': 'mal_beth_b.jpg', 
             'c': 'mal_kaf_k.jpg', 
             'd': 'mal_dalet_d.jpg',
             'e': 'mal_he_e.jpg', 
-            'f': 'mal_peh_f_p.jpg',
-            'g': 'mal_gimel_g.jpg',
+            'f': 'mal_peh_f_p.jpg', 
+            'g': 'mal_gimel_g.jpg', 
             'h': 'mal_he_e.jpg',
             'i': 'mal_yod_i_j_y.jpg', 
             'j': 'mal_yod_i_j_y.jpg', 
@@ -352,44 +364,49 @@
             'r': 'mal_resh_r.jpg', 
             's': 'mal_samech_s_1.jpg', 
             's2': 'mal_samech_s_2.jpg',
-            't': 'mal_tav_t.jpg',
-            't2': 'mal_tet_t.jpg',
+            't': 'mal_tav_t.jpg', 
+            't2': 'mal_tet_t.jpg', 
             'u': 'mal_vav_f_u_v_w.jpg', 
             'v': 'mal_vav_f_u_v_w.jpg', 
-            'w': 'mal_vav_f_u_v_w.jpg',
-            'x': 'mal_tsadeh_ts_z.jpg',
+            'w': 'mal_vav_f_u_v_w.jpg', 
+            'x': 'mal_tsadeh_ts_z.jpg', 
             'y': 'mal_yod_i_j_y.jpg', 
             'z': 'mal_zayin_z.jpg',
-             
-            'ch': 'mal_chet_ch.jpg',
+            'ch': 'mal_chet_ch.jpg', 
             'sh': 'mal_shin_sh_s.jpg', 
             'ts': 'mal_tsadeh_ts_z.jpg',
+            'ts2': 'mal_tsadeh_ts_z_2.jpg',
             
             ' ': 'mal_space.jpg', 
-            '.': 'mal_dot.jpg', 
-             
-            '_a': 'alef.jpg', 
-            '_b': 'bet.jpg', 
-            '_g': 'gimel.jpg', 
-            '_d': 'dalet.jpg', 
-            '_e': 'he.jpg',
-            '_v': 'vav.jpg', 
-            '_z': 'zayin.jpg', 
-            '_ch': 'chet.jpg', 
-            '_th': 'tet.jpg', 
-            '_y': 'yod.jpg',
-            '_k': 'kaf.jpg', 
-            '_l': 'lamed.jpg', 
-            '_m': 'mem.jpg', 
-            '_n': 'nun.jpg', 
-            '_s': 'samech.jpg',
-            '_o': 'ayin.jpg', 
-            '_p': 'peh.jpg', 
-            '_ts': 'tsadeh.jpg', 
-            '_q': 'qof.jpg', 
-            '_r': 'resh.jpg',
-            '_sh': 'shin.jpg', 
-            '_t': 'tav.jpg'
+            '.': 'mal_dot.jpg',
+            
+            '_a': 'alef.png', 
+            '_b': 'bet.png', 
+            '_g': 'gimel.png', 
+            '_d': 'dalet.png', 
+            '_e': 'he.png',
+            '_v': 'vav.png', 
+            '_z': 'zayin.png', 
+            '_ch': 'chet.png', 
+            '_th': 'tet.png', 
+            '_y': 'yod.png',
+            '_k': 'kaf.png', 
+            '_k2': 'kaf sofit.png',
+            '_l': 'lamed.png', 
+            '_m': 'mem.png', 
+            '_m2': 'mem sofit.png',
+            '_n': 'nun.png', 
+            '_n2': 'nun sofit.png',
+            '_s': 'samech.png',
+            
+            '_o': 'ayin.png', 
+            '_p': 'peh.png', 
+            '_ts': 'tsadeh.png', 
+            '_ts2': 'tsadeh sofit.png',
+            '_q': 'qof.png', 
+            '_r': 'resh.png',
+            '_sh': 'shin.png', 
+            '_t': 'tav.png'
         };
 
         const area = document.getElementById('schreibflaeche');
@@ -406,6 +423,11 @@
         let underscoreMode = false;
         let rtlStartIndex = -1; 
         let activeAlignment = 'left';
+
+        mobileInput.setAttribute('autocomplete', 'off');
+        mobileInput.setAttribute('autocorrect', 'off');
+        mobileInput.setAttribute('autocapitalize', 'off');
+        mobileInput.setAttribute('spellcheck', 'false');
 
         function updateStyles() {
             const w = inpWidth.value + 'px';
@@ -503,22 +525,22 @@
         mobileInput.addEventListener('input', function(e) {
             checkFirstKey();
             let val = mobileInput.value;
-            mobileInput.value = "";
-
-            if (!val && e.inputType === "deleteContentBackward") {
-                handleBackspace();
-            } else if (val) {
-                handleNewChar(val);
+            if (val.length > 0) {
+                let lastChar = val.substring(val.length - 1);
+                mobileInput.value = ""; 
+                handleNewChar(lastChar);
+                renderText();
             }
-            renderText();
         });
 
         mobileInput.addEventListener('keydown', function(e) {
             checkFirstKey();
             if (e.key === 'Backspace') {
+                e.preventDefault();
                 handleBackspace();
                 renderText();
             } else if (e.key === 'Enter') {
+                e.preventDefault();
                 if (underscoreMode) {
                     tokenList.push({ value: 'ENTER', align: activeAlignment });
                     rtlStartIndex = tokenList.length;
@@ -549,52 +571,67 @@
         }
 
         function handleNewChar(charStr) {
-    let char = charStr.toLowerCase();
-    
-    if (char === ' ') {
-        insertToken(' ');
-    } else if (char === '.') {
-        insertToken('.');
-    } 
-    else if (char === '_') {
-        underscoreMode = !underscoreMode;
-        if (underscoreMode) {
-            rtlStartIndex = tokenList.length; 
-        } else {
-            rtlStartIndex = -1;
-        }
-        updateModusAnzeige();
-    } 
-    else {
-        if (underscoreMode) {
-            let lastIdx = tokenList.length - 1;
-            // Prüfen, ob wir uns im RTL-Block befinden und ein Doppelzeichen zusammensetzen müssen
-            if (lastIdx >= 0 && tokenList[lastIdx].value === '_c' && char === 'h') { 
-                tokenList[lastIdx].value = '_ch'; 
-            }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === '_s' && char === 'h') { 
-                tokenList[lastIdx].value = '_sh'; 
-            }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === '_t' && char === 's') { 
-                tokenList[lastIdx].value = '_ts'; 
-            }
-            // Falls es kein Doppelzeichen ist, normal als Unterstrich-Zeichen einfügen
-            else if (imageMapping['_' + char]) {
-                insertToken('_' + char);
+            let char = charStr.toLowerCase();
+            
+            if (char === ' ') { insertToken(' '); return; } 
+            if (char === '.') { insertToken('.'); return; } 
+            if (char === '_') {
+                underscoreMode = !underscoreMode;
+                if (underscoreMode) { rtlStartIndex = tokenList.length; } else { rtlStartIndex = -1; }
+                updateModusAnzeige();
+                return;
             } 
-        } else {
-            let lastIdx = tokenList.length - 1;
-            if (lastIdx >= 0 && tokenList[lastIdx].value === 'c' && char === 'h') { tokenList[lastIdx].value = 'ch'; }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === 's' && char === 'h') { tokenList[lastIdx].value = 'sh'; }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === 's' && char === '2') { tokenList[lastIdx].value = 's2'; }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === 't' && char === 's') { tokenList[lastIdx].value = 'ts'; }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === 't' && char === '2') { tokenList[lastIdx].value = 't2'; }
-            else if (lastIdx >= 0 && tokenList[lastIdx].value === 'ts' && char === '2') { tokenList[lastIdx].value = 'ts2'; }
-            else if (imageMapping[char]) { insertToken(char); }
-        }
-    }
-}
 
+            // Finde das reale, letzte im Editor getippte Token (unabhängig von LTR/RTL Indexverschiebungen)
+            let lastTypedToken = null;
+            if (underscoreMode && rtlStartIndex !== -1) {
+                // Im RTL-Modus liegt das neueste Token direkt bei rtlStartIndex
+                if (rtlStartIndex < tokenList.length) lastTypedToken = tokenList[rtlStartIndex];
+            } else {
+                // Im LTR-Modus liegt es ganz am Ende der Liste
+                if (tokenList.length > 0) lastTypedToken = tokenList[tokenList.length - 1];
+            }
+
+            // MODIFIKATOREN (2 und h) abfangen, BEVOR neue Tokens generiert werden
+            if (lastTypedToken) {
+                if (char === '2') {
+                    let currentVal = lastTypedToken.value;
+                    if (currentVal === 's')  { lastTypedToken.value = 's2'; return; }
+                    if (currentVal === '_s') { lastTypedToken.value = '_s2'; return; }
+                    if (currentVal === 't')  { lastTypedToken.value = 't2'; return; }
+                    if (currentVal === '_t') { lastTypedToken.value = '_t2'; return; }
+                    if (currentVal === 'k')  { lastTypedToken.value = 'k2'; return; }
+                    if (currentVal === '_k') { lastTypedToken.value = '_k2'; return; }
+                    if (currentVal === 'm')  { lastTypedToken.value = 'm2'; return; }
+                    if (currentVal === '_m') { lastTypedToken.value = '_m2'; return; }
+                    if (currentVal === 'n')  { lastTypedToken.value = 'n2'; return; }
+                    if (currentVal === '_n') { lastTypedToken.value = '_n2'; return; }
+                    if (currentVal === 'ts') { lastTypedToken.value = 'ts2'; return; }
+                    if (currentVal === '_ts') { lastTypedToken.value = '_ts2'; return; }
+                }
+                
+                if (char === 'h') {
+                    let currentVal = lastTypedToken.value;
+                    if (currentVal === 'c')  { lastTypedToken.value = 'ch'; return; }
+                    if (currentVal === '_ch_temp') { lastTypedToken.value = '_ch'; return; }
+                    if (currentVal === 't')  { lastTypedToken.value = 'th'; return; } // Für t2 vs th im LTR falls nötig
+                    if (currentVal === '_t') { lastTypedToken.value = '_th'; return; }
+                    if (currentVal === 's')  { lastTypedToken.value = 'sh'; return; }
+                    if (currentVal === '_s') { lastTypedToken.value = '_sh'; return; }
+                }
+
+                if (char === 's' && lastTypedToken.value === 't') { lastTypedToken.value = 'ts'; return; }
+                if (char === 's' && lastTypedToken.value === '_t') { lastTypedToken.value = '_ts'; return; }
+            }
+
+            // Wenn kein Modifikator gegriffen hat, reguläres Zeichen einfügen
+            if (underscoreMode) {
+                if (char === 'c') { insertToken('_ch_temp'); } 
+                else if (imageMapping['_' + char]) { insertToken('_' + char); }
+            } else {
+                if (imageMapping[char]) { insertToken(char); }
+            }
+        }
 
         function renderSingleToken(token, size) {
             const src = imageMapping[token];
@@ -636,7 +673,6 @@
                 lines[lines.length - 1].tokens.push({ type: 'cursor' });
             }
 
-            // 1. Schreibfläche rendern
             lines.forEach((line) => {
                 html += `<div class="text-zeile align-${line.align}">`;
                 line.tokens.forEach(item => {
@@ -649,9 +685,7 @@
                 html += `</div>`;
             });
 
-            // 2. Kontrollfeld zeilenweise verarbeiten
             let kontrollLines = [[]];
-            
             tokenList.forEach(tokenObj => {
                 if (tokenObj.value === 'ENTER') {
                     kontrollLines.push([]);
@@ -694,10 +728,11 @@
         function renderKontrollToken(token) {
             if (token === ' ') return ' ';
             if (token === '.') return '.';
+            if (token === '_ch_temp') return 'c';
             if (token.startsWith('_') && token !== '_') {
-                return token.substring(1);
+                return token.substring(1).replace('2', ' (Sofit)'); 
             }
-            return token;
+            return token.replace('2', ' (Sofit)');
         }
 
         function clearAll() {
@@ -747,6 +782,7 @@
             let currentContent = exportArea.innerHTML;
             if (isFirstKey) currentContent = "";
             const spacingBottom = (parseFloat(inpSize.value) * 0.15) + 'px';
+            const sizeHeight = inpSize.value + 'px';
             
             let htmlContent = `<!DOCTYPE html>
 <html lang="de">
@@ -767,8 +803,11 @@
         .text-zeile {
             display: block;
             width: 100%;
+            height: ${sizeHeight};
             font-size: 0;
             margin-bottom: ${spacingBottom};
+            position: relative;
+            overflow: visible;
         }
         .text-zeile.align-left { text-align: left; }
         .text-zeile.align-center { text-align: center; }
@@ -776,10 +815,10 @@
         
         .text-zeile img { 
             display: inline-block; 
-            object-fit: cover;
-            object-position: left center;
+            object-fit: contain;
             vertical-align: top;
             position: relative;
+            z-index: 2;
         }
     </style>
 </head>
