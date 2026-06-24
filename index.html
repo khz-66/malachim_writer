@@ -352,7 +352,9 @@
             'ch': { w: 1.15, h: 1.00, y: 0.00, space: 1.0 },
             'sh': { w: 1.20, h: 1.00, y: 0.00, space: 1.0 },
             'ts': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
-            'ts2': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
+            'th': { w: 1.10, h: 1.00, y: -0.05, space: 1.0 },
+            'ts': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
+            'sch': { w: 1.20, h: 1.00, y: 0.00, space: 1.0 },
             
             '.':  { w: 0.50, h: 1.00, y: -0.00, space: 0.5 },
             ' ':  { w: 0.50, h: 1.00, y: 0.00, space: 1.0 },
@@ -425,7 +427,9 @@
             'ch': 'mal_chet_ch.jpg', 
             'sh': 'mal_shin_sh_s.jpg', 
             'ts': 'mal_tsadeh_ts_z.jpg',
-            'ts2': 'mal_tsadeh_ts_z_2.jpg',
+            'th': 'mal_tet_t.jpg', 
+            'ts': 'mal_tsadeh_ts_z.jpg',
+            'sch': 'mal_shin_sh_s.jpg', 
             
             ' ': 'mal_space.jpg', 
             '.': 'mal_dot.jpg',
@@ -620,7 +624,7 @@
             }
         }
 
-        function handleNewChar(charStr) {
+                        function handleNewChar(charStr) {
             let char = charStr.toLowerCase();
             
             if (char === ' ') { insertToken(' '); return; } 
@@ -634,12 +638,24 @@
 
             // Finde das reale, letzte im Editor getippte Token (unabhängig von LTR/RTL Indexverschiebungen)
             let lastTypedToken = null;
+            let secondLastTypedToken = null;
+            
             if (underscoreMode && rtlStartIndex !== -1) {
                 // Im RTL-Modus liegt das neueste Token direkt bei rtlStartIndex
-                if (rtlStartIndex < tokenList.length) lastTypedToken = tokenList[rtlStartIndex];
+                if (rtlStartIndex < tokenList.length) {
+                    lastTypedToken = tokenList[rtlStartIndex];
+                    if (rtlStartIndex + 1 < tokenList.length) {
+                        secondLastTypedToken = tokenList[rtlStartIndex + 1];
+                    }
+                }
             } else {
                 // Im LTR-Modus liegt es ganz am Ende der Liste
-                if (tokenList.length > 0) lastTypedToken = tokenList[tokenList.length - 1];
+                if (tokenList.length > 0) {
+                    lastTypedToken = tokenList[tokenList.length - 1];
+                    if (tokenList.length > 1) {
+                        secondLastTypedToken = tokenList[tokenList.length - 2];
+                    }
+                }
             }
 
             // MODIFIKATOREN (2 und h) abfangen, BEVOR neue Tokens generiert werden
@@ -662,9 +678,22 @@
                 
                 if (char === 'h') {
                     let currentVal = lastTypedToken.value;
+                    
+                    // KORREKTUR: Wenn das letzte Token 'c' ist und das davor ein 's' war -> wird zu 'sch'
+                    if (currentVal === 'c' && secondLastTypedToken && secondLastTypedToken.value === 's') {
+                        // Entferne das 's' aus der Liste
+                        if (underscoreMode && rtlStartIndex !== -1) {
+                            tokenList.splice(rtlStartIndex + 1, 1);
+                        } else {
+                            tokenList.splice(tokenList.length - 2, 1);
+                        }
+                        lastTypedToken.value = 'sch';
+                        return;
+                    }
+                    
                     if (currentVal === 'c')  { lastTypedToken.value = 'ch'; return; }
                     if (currentVal === '_ch_temp') { lastTypedToken.value = '_ch'; return; }
-                    if (currentVal === 't')  { lastTypedToken.value = 'th'; return; } // Für t2 vs th im LTR falls nötig
+                    if (currentVal === 't')  { lastTypedToken.value = 'th'; return; } 
                     if (currentVal === '_t') { lastTypedToken.value = '_th'; return; }
                     if (currentVal === 's')  { lastTypedToken.value = 'sh'; return; }
                     if (currentVal === '_s') { lastTypedToken.value = '_sh'; return; }
@@ -682,6 +711,8 @@
                 if (imageMapping[char]) { insertToken(char); }
             }
         }
+
+
 
         function renderSingleToken(token, size) {
             const src = imageMapping[token];
