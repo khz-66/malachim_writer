@@ -109,6 +109,8 @@
             box-sizing: border-box;
             box-shadow: inset 0 2px 4px rgba(0,0,0,0.2);
             cursor: text;
+             height: calc(3 * 1.4em + 30px); /* 3 Zeilen à 1.4 Zeilenhöhe + Innenabstand (Padding) */
+             overflow-y: auto;  
         }
 
         .kontroll-label {
@@ -126,6 +128,8 @@
             white-space: pre-wrap;
             line-height: 1.4;
             min-height: 20px;
+             max-height: 4.2em; /* 3 Zeilen * 1.4 Zeilenhöhe */
+    overflow-y: auto;
         }
 
         .editor-container {
@@ -224,18 +228,15 @@
         .btn-html { background-color: #e67e22; color: white; }
         .btn-clear { background-color: #e74c3c; color: white; }
         
-      
-      
-/* Das fixierte Absperrband */
+        /* Das fixierte Absperrband */
         .absperrband {
-            position: fixed;   /* Bleibt beim Scrollen fest stehen */
-            top: 1vh;          /* 5% Abstand zur Oberkante */
+            position: fixed;   
+            top: 1vh;          
             left: 0;
-            width: 100%;       /* Volle Breite */
-            height: 5vh;       /* 5% der Seitenhöhe */
-            z-index: 9999;     /* Sorgt dafür, dass es über allem anderen liegt */
+            width: 100%;       
+            height: 5vh;       
+            z-index: 9999;     
             
-            /* Rot-weiße Streifen */
             background: linear-gradient(
                 135deg,
                 #d32f2f, #d32f2f 25%,
@@ -246,26 +247,51 @@
             background-size: 70px 70px;
             box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
             
-            /* Flexbox, um den Text perfekt in der Mitte des Bandes zu zentrieren */
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
-        /* Der "Under Construction" Text */
         .bau-text {
             color: #ffffff;
             font-weight: bold;
             text-transform: uppercase;
             letter-spacing: 2px;
-            background-color: rgba(0, 0, 0, 0.75); /* Dunkler Kasten für bessere Lesbarkeit */
+            background-color: rgba(0, 0, 0, 0.75); 
             padding: 2px 15px;
             border-radius: 4px;
-            font-size: 2vh; /* Schriftgröße skaliert passend zur Bandhöhe */
+            font-size: 2vh; 
             box-shadow: 0 2px 4px rgba(0,0,0,0.3);
         }
       
-      
+        #screen-keyboard {
+            margin-top: 12px;
+            /* display: flex; */
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            max-width: 360px;
+        }
+
+        .keyboard-row {
+            display: flex;
+            gap: 4px;
+        }
+
+        .key {
+            flex: 1;
+            height: 36px;
+            border: 1px solid #999;
+            border-radius: 5px;
+            background: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .key-wide {
+            flex: 4;
+        }
     </style>
 </head>
 <body>
@@ -274,8 +300,7 @@
         <span class="bau-text">Under Construction</span>
     </div>
 
-    <br>
-    <br>
+    <br><br>
     
     <h1>MalachimWriter</h1>
 
@@ -300,6 +325,13 @@
         <button id="btn-align-left" class="btn-align active" onclick="setAlign('left')">Links</button>
         <button id="btn-align-center" class="btn-align" onclick="setAlign('center')">Zentriert</button>
         <button id="btn-align-right" class="btn-align" onclick="setAlign('right')">Rechts</button>
+        <button id="btn-monospace" class="btn-align" onclick="toggleMonospace()">Monospace</button>
+    </div>
+
+    <div style="margin-bottom:10px;">
+        <label>
+            <input type="checkbox" id="toggle-keyboard"> Bildschirmtastatur
+        </label>
     </div>
 
     <div class="kontroll-panel" id="kp-focus">
@@ -313,12 +345,14 @@
     </div>
 
     <div class="controls-panel">
-        <button class="btn-control btn-jpg" onclick="exportAsJPG()">Als JPG speichern</button>
+        <button class="btn-control btn-jpg" onclick="exportAsJPG()">JPG Export</button>
         <button class="btn-control btn-html" onclick="exportAsHTML()">HTML Export</button>
         <button class="btn-control btn-clear" onclick="clearAll()">Löschen</button>
-    </div>
+    </div> 
+    
+    <div id="screen-keyboard" hidden></div>
 
-           <script>
+    <script>
         const charConfig = {
             'a':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
             'b':  { w: 1.00, h: 1.00, y: 0.00, space: 1.0 },
@@ -351,116 +385,59 @@
             
             'ch': { w: 1.15, h: 1.00, y: 0.00, space: 1.0 },
             'sh': { w: 1.20, h: 1.00, y: 0.00, space: 1.0 },
-            'ts': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
             'th': { w: 1.10, h: 1.00, y: -0.05, space: 1.0 },
             'ts': { w: 0.60, h: 1.00, y: -0.03, space: 1.0 },
             'sch': { w: 1.20, h: 1.00, y: 0.00, space: 1.0 },
             
             '.':  { w: 0.50, h: 1.00, y: -0.00, space: 0.5 },
             ' ':  { w: 0.50, h: 1.00, y: 0.00, space: 1.0 },
-            
+            '/':  { w: 0.00, h: 1.00, y: 0.00, space: 0.0 },
+     
             '_a': { w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_b': { w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_g': { w: 0.40, h: 1.70, y: -0.45, space: 1.0 },
             '_d': { w: 0.40, h: 1.60, y: -0.40, space: 1.0 },
+            '_h': { w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_e': { w: 0.40, h: 1.60, y: -0.40, space: 1.0 },
-            '_v': { w: 0.40, h: 1.60, y: -0.40, space: 0.5 }, 
-            
-            '_z': { w: 0.85, h: 1.60, y: -0.40, space: 1.0 },
-            '_ch':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
-            '_th':{ w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
+            '_w': { w: 0.40, h: 1.60, y: -0.40, space: 0.5 }, 
+            '_z': { w: 0.30, h: 1.60, y: -0.40, space: 0.3 },
+            '_ch':{ w: 0.50, h: 1.60, y: -0.40, space: 0.8 },
+            '_t':{ w: 0.50, h: 1.60, y: -0.40, space: 1.0 },
             '_y': { w: 0.40, h: 1.60, y: -0.40, space: 0.10},
-            '_k': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            
-            '_l': { w: 0.40, h: 1.60, y: -0.45, space: 0.5 },
-            
-            '_m': { w: 1.00, h: 1.60, y: -0.40, space: 1.0 },
-            '_n': { w: 0.85, h: 1.60, y: 0.08, space: 1.0 },
-            '_s': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_s2': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_o': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_p': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_ts':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
-            
+            '_k': { w: 0.45, h: 1.60, y: -0.45, space: 1.0 },
+            '_k2':{ w: 0.45, h: 1.60, y: -0.45, space: 0.6 },
+            '_l': { w: 0.40, h: 1.60, y: -0.40, space: 0.5 },
+            '_m': { w: 0.50, h: 1.60, y: -0.45, space: 1.0 },
+            '_m2':{ w: 0.50, h: 1.60, y: -0.45, space: 0.6 },
+            '_n': { w: 0.40, h: 1.60, y: -0.45, space: 0.4 },
+            '_n2':{ w: 0.40, h: 1.60, y: -0.45, space: 0.2 },
+            '_s': { w: 0.50, h: 1.60, y: -0.45, space: 0.7 },
+            '_o': { w: 0.50, h: 1.60, y: -0.42, space: 0.8 },
+            '_p': { w: 0.50, h: 1.60, y: -0.42, space: 1.0 },
+            '_f': { w: 0.50, h: 1.60, y: -0.42, space: 1.0 },
+            '_ts':{ w: 0.50, h: 1.60, y: -0.42, space: 0.8 },
+            '_ts2':{ w: 0.40, h: 1.60, y: -0.40, space: 0.4 },
             '_q': { w: 0.40, h: 1.65, y: -0.45, space: 1.0 },
-            
-            '_k2':{ w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_m2':{ w: 1.00, h: 1.60, y: -0.40, space: 1.0 },
-            '_n2':{ w: 0.85, h: 1.60, y: 0.08, space: 1.0 },
-            '_ts2':{ w: 1.10, h: 1.60, y: -0.40, space: 1.0 },
-            
-            '_r': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 },
-            '_sh':{ w: 1.15, h: 1.60, y: -0.40, space: 1.0 },
-            '_t': { w: 0.90, h: 1.60, y: -0.40, space: 1.0 }
+            '_r': { w: 0.50, h: 1.60, y: -0.45, space: 0.6 },
+            '_sh':{ w: 0.50, h: 1.60, y: -0.45, space: 0.6 }
         };
 
         const imageMapping = {
-            
-            'a': 'mal_alef_a.jpg', 
-            'b': 'mal_beth_b.jpg', 
-            'c': 'mal_kaf_k.jpg', 
-            'd': 'mal_dalet_d.jpg',
-            'e': 'mal_he_e.jpg', 
-            'f': 'mal_peh_f_p.jpg', 
-            'g': 'mal_gimel_g.jpg', 
-            'h': 'mal_he_e.jpg',
-            'i': 'mal_yod_i_j_y.jpg', 
-            'j': 'mal_yod_i_j_y.jpg', 
-            'k': 'mal_kaf_k.jpg', 
-            'l': 'mal_lamed_l.jpg',
-            'm': 'mal_mem_m.jpg', 
-            'n': 'mal_nun_n.jpg', 
-            'o': 'mal_ayin_o.jpg', 
-            'p': 'mal_peh_f_p.jpg', 
-            'q': 'mal_qof_q.jpg', 
-            'r': 'mal_resh_r.jpg', 
-            's': 'mal_samech_s_1.jpg', 
-            's2': 'mal_samech_s_2.jpg',
-            't': 'mal_tav_t.jpg', 
-            't2': 'mal_tet_t.jpg', 
-            'u': 'mal_vav_f_u_v_w.jpg', 
-            'v': 'mal_vav_f_u_v_w.jpg', 
-            'w': 'mal_vav_f_u_v_w.jpg', 
-            'x': 'mal_tsadeh_ts_z.jpg', 
-            'y': 'mal_yod_i_j_y.jpg', 
-            'z': 'mal_zayin_z.jpg',
-            'ch': 'mal_chet_ch.jpg', 
-            'sh': 'mal_shin_sh_s.jpg', 
-            'ts': 'mal_tsadeh_ts_z.jpg',
-            'th': 'mal_tet_t.jpg', 
-            'ts': 'mal_tsadeh_ts_z.jpg',
-            'sch': 'mal_shin_sh_s.jpg', 
-            
-            ' ': 'mal_space.jpg', 
-            '.': 'mal_dot.jpg',
-            
-            '_a': 'alef.png', 
-            '_b': 'bet.png', 
-            '_g': 'gimel.png', 
-            '_d': 'dalet.png', 
-            '_e': 'he.png',
-            '_v': 'vav.png', 
-            '_z': 'zayin.png', 
-            '_ch': 'chet.png', 
-            '_th': 'tet.png', 
-            '_y': 'yod.png',
-            '_k': 'kaf.png', 
-            '_k2': 'kaf sofit.png',
-            '_l': 'lamed.png', 
-            '_m': 'mem.png', 
-            '_m2': 'mem sofit.png',
-            '_n': 'nun.png', 
-            '_n2': 'nun sofit.png',
-            '_s': 'samech.png',
-            
-            '_o': 'ayin.png', 
-            '_p': 'peh.png', 
-            '_ts': 'tsadeh.png', 
-            '_ts2': 'tsadeh sofit.png',
-            '_q': 'qof.png', 
-            '_r': 'resh.png',
-            '_sh': 'shin.png', 
-            '_t': 'tav.png'
+            'a': 'mal_alef_a.jpg', 'b': 'mal_beth_b.jpg', 'c': 'mal_kaf_k.jpg', 'd': 'mal_dalet_d.jpg',
+            'e': 'mal_ayin_o.jpg', 'f': 'mal_peh_f_p.jpg', 'g': 'mal_gimel_g.jpg', 'h': 'mal_he_e.jpg',
+            'i': 'mal_yod_i_j_y.jpg', 'j': 'mal_yod_i_j_y.jpg', 'k': 'mal_kaf_k.jpg', 'l': 'mal_lamed_l.jpg',
+            'm': 'mal_mem_m.jpg', 'n': 'mal_nun_n.jpg', 'o': 'mal_ayin_o.jpg', 'p': 'mal_peh_f_p.jpg',
+            'q': 'mal_qof_q.jpg', 'r': 'mal_resh_r.jpg', 's': 'mal_samech_s_2.jpg', 's2': 'mal_samech_s_1.jpg',
+            't': 'mal_tav_t.jpg', 't2': 'mal_tet_t.jpg', 'u': 'mal_vav_f_u_v_w.jpg', 'v': 'mal_vav_f_u_v_w.jpg',
+            'w': 'mal_vav_f_u_v_w.jpg', 'x': 'mal_tsadeh_ts_z.jpg', 'y': 'mal_yod_i_j_y.jpg', 'z': 'mal_zayin_z.jpg',
+            'ch': 'mal_chet_ch.jpg', 'sh': 'mal_shin_sh_s.jpg', 'th': 'mal_tet_t.jpg', 'ts': 'mal_tsadeh_ts_z.jpg',
+            'sch': 'mal_shin_sh_s.jpg', ' ': 'mal_space.jpg', '.': 'mal_dot.jpg', '/': 'mal_separator.png',
+            '_a': 'alef.png', '_b': 'bet.png', '_g': 'gimel.png', '_d': 'dalet.png', '_h': 'he.png',
+            '_w': 'vav.png', '_z': 'zayin.png', '_ch': 'chet.png', '_t2': 'tet.png', '_y': 'yod.png',
+            '_k': 'kaf.png', '_k2': 'kaf sofit.png', '_l': 'lamed.png', '_m': 'mem.png', '_m2': 'mem sofit.png',
+            '_n': 'nun.png', '_n2': 'nun sofit.png', '_s': 'samech.png', '_o': 'ayin.png', '_p': 'peh.png',
+            '_f': 'peh.png', '_ts': 'tsadeh.png', '_ts2': 'tsadeh sofit.png', '_q': 'qof.png', '_r': 'resh.png',
+            '_sh': 'shin.png', '_t': 'tav.png'
         };
 
         const area = document.getElementById('schreibflaeche');
@@ -471,7 +448,9 @@
         const inpWidth = document.getElementById('inp-width');
         const inpHeight = document.getElementById('inp-height');
         const inpSize = document.getElementById('inp-size');
-
+        // HIER: Nur Referenz holen, kein erneutes const setzen
+        const btnMonospace = document.getElementById('btn-monospace');
+        
         let tokenList = [];
         let isFirstKey = true;
         let underscoreMode = false;
@@ -483,11 +462,82 @@
         mobileInput.setAttribute('autocapitalize', 'off');
         mobileInput.setAttribute('spellcheck', 'false');
 
+        const keyboardLayout = [
+            ["q","w","e","r","t","z","u","i","o","p"],
+            ["a","s","d","f","g","h","j","k","l","."],
+            ["y","x","c","v","b","n","m","_","2"],
+            ["SPACE","/","BACK","ENTER"]
+        ];
+
+        const keyboard = document.getElementById("screen-keyboard");
+        const toggleKeyboard = document.getElementById("toggle-keyboard");
+
+        function createKeyboard(){
+            keyboard.innerHTML="";
+            keyboardLayout.forEach(row=>{
+                const rowDiv=document.createElement("div");
+                rowDiv.className="keyboard-row";
+                row.forEach(key=>{
+                    const btn=document.createElement("button");
+                    btn.className="key";
+                    if(key==="SPACE"){
+                        btn.textContent="Leer";
+                        btn.classList.add("key-wide");
+                    } else if(key==="BACK"){
+                        btn.textContent="⌫";
+                    } else if(key==="ENTER"){
+                        btn.textContent="↵";
+                    } else {
+                        btn.textContent=key;
+                    }
+
+                    btn.onclick=function(e){
+                        e.preventDefault(); // Verhindert mobilen Fokusverlust
+                        checkFirstKey();
+                        if(key==="SPACE"){
+                            handleNewChar(" ");
+                        } else if(key==="BACK"){
+                            handleBackspace();
+                        } else if(key==="ENTER"){
+                            if(underscoreMode){
+                                tokenList.push({value:"ENTER",align:activeAlignment});
+                                rtlStartIndex=tokenList.length;
+                            }else{
+                                insertToken("ENTER");
+                            }
+                        }else{
+                            handleNewChar(key);
+                        }
+                        renderText();
+                    };
+                    rowDiv.appendChild(btn);
+                });
+                keyboard.appendChild(rowDiv);
+            });
+        }
+
+        createKeyboard();
+
+                toggleKeyboard.addEventListener("change", function () {
+            keyboard.hidden = !this.checked;
+            
+            // NEU: Verhindert die Android-Tastatur, wenn die eigene Tastatur aktiv ist
+            if (this.checked) {
+                mobileInput.setAttribute('inputmode', 'none');
+            } else {
+                mobileInput.removeAttribute('inputmode');
+            }
+            
+            // Nach dem Umschalten direkt den Fokus behalten/setzen
+            mobileInput.focus();
+        });
+
+
         function updateStyles() {
             const w = inpWidth.value + 'px';
             const h = inpHeight.value + 'px';
             const size = parseFloat(inpSize.value);
-
+            const isMonospace = btnMonospace.classList.contains('active');
             area.style.width = w;
             area.style.height = h;
             mobileInput.style.width = w;
@@ -508,10 +558,13 @@
                 const token = img.getAttribute('alt');
                 const cfg = charConfig[token] || { w: 1.0, h: 1.0, y: 0.0, space: 1.0 };
                 
+                const currentW = isMonospace ? 1.0 : cfg.w;
+                const currentSpace = isMonospace ? 1.0 : cfg.space;
+                
                 const calcHeight = size * cfg.h;
-                const calcWidth = calcHeight * cfg.w;
+                const calcWidth = calcHeight * currentW; 
                 const calcTop = size * cfg.y;
-                const calcRightSpace = globalSpacingRight * cfg.space;
+                const calcRightSpace = globalSpacingRight * currentSpace;
 
                 img.style.width = calcWidth + 'px';
                 img.style.height = calcHeight + 'px';
@@ -525,6 +578,10 @@
                 cursor.style.marginRight = globalSpacingRight + 'px';
             }
         }
+
+        inpWidth.addEventListener('input', updateStyles);
+        inpHeight.addEventListener('input', updateStyles);
+        inpSize.addEventListener('input', updateStyles);
 
         function setAlign(alignment) {
             activeAlignment = alignment;
@@ -543,6 +600,11 @@
             renderText();
         }
 
+        function toggleMonospace() {
+            btnMonospace.classList.toggle('active');
+            updateStyles();
+        }
+
         function updateModusAnzeige() {
             if (underscoreMode) {
                 statusAnzeige.textContent = "Unterstrich-Modus (Rechts nach Links)";
@@ -552,10 +614,6 @@
                 statusAnzeige.className = "status-panel modus-normal";
             }
         }
-
-        inpWidth.addEventListener('input', updateStyles);
-        inpHeight.addEventListener('input', updateStyles);
-        inpSize.addEventListener('input', updateStyles);
 
         function checkFirstKey() {
             if (isFirstKey) {
@@ -616,7 +674,7 @@
         }
 
         function insertToken(tokenVal) {
-            let tokenObj = { value: tokenVal, align: activeAlignment };
+            let tokenObj = { value: tokenVal, align: activeAlignment, mono: btnMonospace.classList.contains('active') };
             if (underscoreMode) {
                 tokenList.splice(rtlStartIndex, 0, tokenObj);
             } else {
@@ -624,7 +682,7 @@
             }
         }
 
-                        function handleNewChar(charStr) {
+        function handleNewChar(charStr) {
             let char = charStr.toLowerCase();
             
             if (char === ' ') { insertToken(' '); return; } 
@@ -636,12 +694,10 @@
                 return;
             } 
 
-            // Finde das reale, letzte im Editor getippte Token (unabhängig von LTR/RTL Indexverschiebungen)
             let lastTypedToken = null;
             let secondLastTypedToken = null;
             
             if (underscoreMode && rtlStartIndex !== -1) {
-                // Im RTL-Modus liegt das neueste Token direkt bei rtlStartIndex
                 if (rtlStartIndex < tokenList.length) {
                     lastTypedToken = tokenList[rtlStartIndex];
                     if (rtlStartIndex + 1 < tokenList.length) {
@@ -649,7 +705,6 @@
                     }
                 }
             } else {
-                // Im LTR-Modus liegt es ganz am Ende der Liste
                 if (tokenList.length > 0) {
                     lastTypedToken = tokenList[tokenList.length - 1];
                     if (tokenList.length > 1) {
@@ -658,12 +713,10 @@
                 }
             }
 
-            // MODIFIKATOREN (2 und h) abfangen, BEVOR neue Tokens generiert werden
             if (lastTypedToken) {
                 if (char === '2') {
                     let currentVal = lastTypedToken.value;
                     if (currentVal === 's')  { lastTypedToken.value = 's2'; return; }
-                    if (currentVal === '_s') { lastTypedToken.value = '_s2'; return; }
                     if (currentVal === 't')  { lastTypedToken.value = 't2'; return; }
                     if (currentVal === '_t') { lastTypedToken.value = '_t2'; return; }
                     if (currentVal === 'k')  { lastTypedToken.value = 'k2'; return; }
@@ -678,10 +731,7 @@
                 
                 if (char === 'h') {
                     let currentVal = lastTypedToken.value;
-                    
-                    // KORREKTUR: Wenn das letzte Token 'c' ist und das davor ein 's' war -> wird zu 'sch'
                     if (currentVal === 'c' && secondLastTypedToken && secondLastTypedToken.value === 's') {
-                        // Entferne das 's' aus der Liste
                         if (underscoreMode && rtlStartIndex !== -1) {
                             tokenList.splice(rtlStartIndex + 1, 1);
                         } else {
@@ -690,7 +740,6 @@
                         lastTypedToken.value = 'sch';
                         return;
                     }
-                    
                     if (currentVal === 'c')  { lastTypedToken.value = 'ch'; return; }
                     if (currentVal === '_ch_temp') { lastTypedToken.value = '_ch'; return; }
                     if (currentVal === 't')  { lastTypedToken.value = 'th'; return; } 
@@ -703,7 +752,6 @@
                 if (char === 's' && lastTypedToken.value === '_t') { lastTypedToken.value = '_ts'; return; }
             }
 
-            // Wenn kein Modifikator gegriffen hat, reguläres Zeichen einfügen
             if (underscoreMode) {
                 if (char === 'c') { insertToken('_ch_temp'); } 
                 else if (imageMapping['_' + char]) { insertToken('_' + char); }
@@ -712,21 +760,23 @@
             }
         }
 
-
-
-        function renderSingleToken(token, size) {
+        function renderSingleToken(tokenObj, size) {
+            const token = tokenObj.value;
             const src = imageMapping[token];
-            if (!src) return ""; 
-            
+            if (!src) return "";
+
             const cfg = charConfig[token] || { w: 1.0, h: 1.0, y: 0.0, space: 1.0 };
             const globalSpacingRight = (size * 0.06);
-            
-            const calcHeight = size * cfg.h;
-            const calcWidth = calcHeight * cfg.w;
-            const calcTop = size * cfg.y;
-            const calcRightSpace = globalSpacingRight * cfg.space;
 
-            return `<img src="${src}" alt="${token}" style="width:${calcWidth}px; height:${calcHeight}px; top:${calcTop}px; margin-right:${calcRightSpace}px;">`;
+            const currentW = tokenObj.mono ? 1.0 : cfg.w;
+            const currentSpace = tokenObj.mono ? 1.0 : cfg.space;
+
+            const calcHeight = size * cfg.h;
+            const calcWidth = calcHeight * currentW;
+            const calcTop = size * cfg.y;
+            const calcRightSpace = globalSpacingRight * currentSpace;
+
+            return `<img src="${src}" alt="${token}" style="width:${calcWidth}px;height:${calcHeight}px;top:${calcTop}px;margin-right:${calcRightSpace}px;">`;
         }
 
         function renderText() {
@@ -746,7 +796,7 @@
                     lines.push({ align: tokenObj.align, tokens: [] });
                 } else {
                     lines[lines.length - 1].align = tokenObj.align;
-                    lines[lines.length - 1].tokens.push({ type: 'token', data: tokenObj.value });
+                    lines[lines.length - 1].tokens.push({ type: 'token', data: tokenObj });
                 }
             });
 
@@ -804,6 +854,9 @@
             kontrollArea.innerHTML = kontrollHtml || (isFirstKey ? "Tippe hier, um zu schreiben..." : "");
             
             if (!isFirstKey) updateStyles();
+            
+            
+            
         }
 
         function renderKontrollToken(token) {
