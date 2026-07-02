@@ -148,7 +148,7 @@
             overflow-x: hidden;
             font-size: 0; 
             min-width: 300px;
-            min-height: 200px;
+            min-height: 50px;
             border: 2px dashed #bdc3c7;
             cursor: text;
         }
@@ -311,11 +311,11 @@
         </div>
         <div class="setting-group">
             <label for="inp-height">Höhe (px)</label>
-            <input type="number" id="inp-height" value="200">
+            <input type="number" id="inp-height" value="110">
         </div>
         <div class="setting-group">
             <label for="inp-size">Zeichen (px)</label>
-            <input type="number" id="inp-size" value="40">
+            <input type="number" id="inp-size" value="36">
         </div>
     </div>
 
@@ -330,17 +330,17 @@
 
     <div style="margin-bottom:10px;">
         <label>
-            <input type="checkbox" id="toggle-keyboard"> Bildschirmtastatur
+            <input type="checkbox" id="toggle-keyboard" checked> Bildschirmtastatur
         </label>
     </div>
 
     <div class="kontroll-panel" id="kp-focus">
         <div class="kontroll-label">Text-Kontrolle:</div>
-        <div id="kontroll-text">Tippe hier, um zu schreiben...</div>
+        <div id="kontroll-text">Tippe unten, um zu schreiben</div>
     </div>
 
     <div class="editor-container">
-        <div id="schreibflaeche">Tippe hier, um zu schreiben...</div>
+        <div id="schreibflaeche">Tippe unten, um zu schreiben</div>
         <input type="text" id="mobile-input" autocomplete="off" autocapitalize="none">
     </div>
 
@@ -901,8 +901,8 @@
                 kontrollHtml += processedLine.join('') + (lineIdx < kontrollLines.length - 1 ? '<br>' : '');
             });
 
-            area.innerHTML = html || (isFirstKey ? "Tippe hier, um zu schreiben..." : "");
-            kontrollArea.innerHTML = kontrollHtml || (isFirstKey ? "Tippe hier, um zu schreiben..." : "");
+            area.innerHTML = html || (isFirstKey ? "Tippe unten, um zu schreiben" : "");
+            kontrollArea.innerHTML = kontrollHtml || (isFirstKey ? "Tippe unten, um zu schreiben" : "");
             
             if (!isFirstKey) updateStyles();
             
@@ -915,9 +915,9 @@
             if (token === '.') return '.';
             if (token === '_ch_temp') return 'c';
             if (token.startsWith('_') && token !== '_') {
-                return token.substring(1).replace('2', ' (Sofit)'); 
+                return token.substring(1).replace('2', '(Sofit)'); 
             }
-            return token.replace('2', ' (Sofit)');
+            return token.replace('2', '(Sofit)');
         }
 
         function clearAll() {
@@ -1023,6 +1023,15 @@
         }
 
         updateStyles();
+        
+          // ==========================================
+        // NEU: Standardmäßig App-Tastatur aktivieren
+        // ==========================================
+        if (toggleKeyboard.checked) {
+            keyboard.hidden = false;
+            mobileInput.setAttribute('inputmode', 'none');
+        }
+        
     </script>
 </body>
 </html>
